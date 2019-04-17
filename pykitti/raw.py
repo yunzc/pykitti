@@ -9,9 +9,9 @@ import numpy as np
 
 import pykitti.utils as utils
 
-__author__ = "Lee Clement"
-__email__ = "lee.clement@robotics.utias.utoronto.ca"
-
+"""
+Original author: Lee Clement lee.clement@robotics.utias.utoronto.ca
+"""
 
 class raw:
     """Load and parse raw data into a usable format."""
@@ -32,6 +32,7 @@ class raw:
 
         # Pre-load data that isn't returned as a generator
         self._load_calib()
+        self._load_img_timestamps()
         self._load_timestamps()
         self._load_oxts()
 
@@ -48,6 +49,10 @@ class raw:
         """Read image file for cam0 (monochrome left) at the specified index."""
         return utils.load_image(self.cam0_files[idx], mode='L')
 
+    def get_cam0_timestamp(self, idx):
+        """Return associated image timestamp for image at specified index for cam0."""
+        return self.cam0_timestamps[idx]
+
     @property
     def cam1(self):
         """Generator to read image files for cam1 (monochrome right)."""
@@ -56,6 +61,10 @@ class raw:
     def get_cam1(self, idx):
         """Read image file for cam1 (monochrome right) at the specified index."""
         return utils.load_image(self.cam1_files[idx], mode='L')
+
+    def get_cam1_timestamp(self, idx):
+        """Return associated image timestamp for image at specified index for cam0."""
+        return self.cam1_timestamps[idx]
 
     @property
     def cam2(self):
@@ -66,6 +75,10 @@ class raw:
         """Read image file for cam2 (RGB left) at the specified index."""
         return utils.load_image(self.cam2_files[idx], mode='RGB')
 
+    def get_cam2_timestamp(self, idx):
+        """Return associated image timestamp for image at specified index for cam0."""
+        return self.cam2_timestamps[idx]
+
     @property
     def cam3(self):
         """Generator to read image files for cam0 (RGB right)."""
@@ -74,6 +87,10 @@ class raw:
     def get_cam3(self, idx):
         """Read image file for cam3 (RGB right) at the specified index."""
         return utils.load_image(self.cam3_files[idx], mode='RGB')
+
+    def get_cam3_timestamp(self, idx):
+        """Return associated image timestamp for image at specified index for cam0."""
+        return self.cam3_timestamps[idx]
 
     @property
     def gray(self):
@@ -243,24 +260,65 @@ class raw:
 
         self.calib = namedtuple('CalibData', data.keys())(*data.values())
 
-    def _load_timestamps(self):
-        """Load timestamps from file."""
-        timestamp_file = os.path.join(
-            self.data_path, 'oxts', 'timestamps.txt')
-
+    @staticmethod
+    def load_timestamps(timestamp_file):
         # Read and parse the timestamps
-        self.timestamps = []
+        timestamps = []
         with open(timestamp_file, 'r') as f:
             for line in f.readlines():
                 # NB: datetime only supports microseconds, but KITTI timestamps
                 # give nanoseconds, so need to truncate last 4 characters to
                 # get rid of \n (counts as 1) and extra 3 digits
                 t = dt.datetime.strptime(line[:-4], '%Y-%m-%d %H:%M:%S.%f')
-                self.timestamps.append(t)
+                timestamps.append(t)
+        return timestamps
 
-        # Subselect the chosen range of frames, if any
+    def _load_timestamps(self):
+        """Load timestamps from file."""
+        timestamp_file = os.path.join(
+            self.data_path, 'oxts', 'timestamps.txt')
+        self.timestamps = self.load_timestamps(timestamp_file)
+        
         if self.frames is not None:
-            self.timestamps = [self.timestamps[i] for i in self.frames]
+            # Subselect the chosen range of frames, if any
+            # Because of the below part, must be called after _load_img_timestamps()
+            time_start = self.cam0_timestamps[0]
+            time_end = self.cam0_timestamps[-1]
+            index_start = 0
+            index_end = len(self.cam0_timestamps)
+
+            # first find starting index 
+            for i in range(len(self.timestamps)):
+                if self.timestamps[i] > time_start:
+                    index_start = max(index_start, i - 2)
+                    break
+            # find ending index 
+            for i in range(len(self.timestamps)):
+                if self.timestamps[-i-1] < time_end:
+                    index_end = min(index_end, len(self.cam0_timestamps) - i)
+                    break
+
+            self.timestamps = self.timestamps[index_start:index_end]
+
+    def _load_img_timestamps(self):
+        img_files = ['image_00', 'image_01', 'image_02', 'image_03']
+        img_timestamps = []
+        for i in range(len(img_files)):
+            img_timestamp_file = os.path.join(self.data_path, 
+                                    img_files[i], 'timestamps.txt')
+            # load
+            timestamps = self.load_timestamps(img_timestamp_file)
+
+            # Subselect the chosen range of frames, if any
+            if self.frames is not None:
+                timestamps = [timestamps[i] for i in self.frames]
+
+            img_timestamps.append(timestamps)
+        
+        self.cam0_timestamps = img_timestamps[0]
+        self.cam1_timestamps = img_timestamps[1]
+        self.cam2_timestamps = img_timestamps[2]
+        self.cam3_timestamps = img_timestamps[3]
 
     def _load_oxts(self):
         """Load OXTS data from file."""

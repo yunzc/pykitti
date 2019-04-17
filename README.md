@@ -5,12 +5,6 @@ This package provides a minimal set of tools for working with the KITTI dataset 
 
 ## Installation
 
-### Using pip
-You can install pykitti via pip using
-```
-pip install pykitti
-```
-
 ### From source
 To install the package from source, simply clone or download the repository to your machine
 ```
@@ -40,18 +34,20 @@ import pykitti
 
 basedir = '/your/dataset/dir'
 date = '2011_09_26'
-drive = '0019'
+drive = '0002'
 
 # The 'frames' argument is optional - default: None, which loads the whole dataset.
 # Calibration, timestamps, and IMU data are read automatically. 
 # Camera and velodyne data are available via properties that create generators
 # when accessed, or through getter methods that provide random access.
-data = pykitti.raw(basedir, date, drive, frames=range(0, 50, 5))
+data = pykitti.raw(basedir, date, drive, dataset='extract', frames=range(0, 50, 5)) 
+# to use the synced datasets, set dataset='sync'
 
 # dataset.calib:         Calibration data are accessible as a named tuple
 # dataset.timestamps:    Timestamps are parsed into a list of datetime objects
 # dataset.oxts:          List of OXTS packets and 6-dof poses as named tuples
 # dataset.camN:          Returns a generator that loads individual images from camera N
+# dataset.get_camN_timestamp(idx): Return the timestamp of the image from camera N at idx
 # dataset.get_camN(idx): Returns the image from camera N at idx  
 # dataset.gray:          Returns a generator that loads monochrome stereo pairs (cam0, cam1)
 # dataset.get_gray(idx): Returns the monochrome stereo pair at idx  
