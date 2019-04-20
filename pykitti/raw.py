@@ -1,6 +1,5 @@
 """Provides 'raw', which loads and parses raw KITTI data."""
 
-import datetime as dt
 import glob
 import os
 from collections import namedtuple
@@ -8,6 +7,7 @@ from collections import namedtuple
 import numpy as np
 
 import pykitti.utils as utils
+import pykitti.datetime as dt
 
 """
 Original author: Lee Clement lee.clement@robotics.utias.utoronto.ca
@@ -269,7 +269,7 @@ class raw:
                 # NB: datetime only supports microseconds, but KITTI timestamps
                 # give nanoseconds, so need to truncate last 4 characters to
                 # get rid of \n (counts as 1) and extra 3 digits
-                t = dt.datetime.strptime(line[:-4], '%Y-%m-%d %H:%M:%S.%f')
+                t = dt.Datetime(line[:-1])
                 timestamps.append(t)
         return timestamps
 

@@ -13,7 +13,11 @@ git clone https://github.com/utiasSTARS/pykitti.git
 and run the provided setup tool
 ```
 cd pykitti
-python setup.py install
+python setup.py develop
+```
+Note that if you have previously installed pykitti you might have to remove all the previous versions. 
+```
+pip uninstall pykitti
 ```
 
 ## Assumptions
