@@ -4,6 +4,7 @@ from collections import namedtuple
 
 import numpy as np
 from PIL import Image
+from scipy.spatial.transform import Rotation
 
 __author__ = "Lee Clement"
 __email__ = "lee.clement@robotics.utias.utoronto.ca"
@@ -82,11 +83,11 @@ def read_calib_file(filepath):
     return data
 
 
-def pose_from_oxts_packet(packet, scale):
+def pose_from_oxts_packet(packet, scale, rot_type='RotMatrix'):
     """Helper method to compute a SE(3) pose matrix from an OXTS packet.
     """
     er = 6378137.  # earth radius (approx.) in meters
-
+    
     # Use a Mercator projection to get the translation vector
     tx = scale * packet.lon * np.pi * er / 180.
     ty = scale * er * \
@@ -94,14 +95,21 @@ def pose_from_oxts_packet(packet, scale):
     tz = packet.alt
     t = np.array([tx, ty, tz])
 
-    # Use the Euler angles to get the rotation matrix
-    Rx = rotx(packet.roll)
-    Ry = roty(packet.pitch)
-    Rz = rotz(packet.yaw)
-    R = Rz.dot(Ry.dot(Rx))
+    if rot_type == 'RotMatrix':
+        # Use the Euler angles to get the rotation matrix
+        Rx = rotx(packet.roll)
+        Ry = roty(packet.pitch)
+        Rz = rotz(packet.yaw)
+        R = Rz.dot(Ry.dot(Rx))
 
-    # Combine the translation and rotation into a homogeneous transform
-    return R, t
+        # Combine the translation and rotation into a homogeneous transform
+        return R, t
+
+    elif rot_type == 'Quaternion':
+        rot = Rotation.from_euler('zyx', [packet.yaw, packet.pitch, packet.roll])
+        q = rot.as_quat()
+
+        return q, t
 
 
 def load_oxts_packets_and_poses(oxts_files):

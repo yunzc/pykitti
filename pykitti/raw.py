@@ -5,6 +5,7 @@ import os
 from collections import namedtuple
 
 import numpy as np
+import csv
 
 import pykitti.utils as utils
 import pykitti.datetime as dt
@@ -323,3 +324,22 @@ class raw:
     def _load_oxts(self):
         """Load OXTS data from file."""
         self.oxts = utils.load_oxts_packets_and_poses(self.oxts_files)
+
+    def export_gt_to_csv(self, filename):
+        """ export the ground truth poses (calculted fomr osts) to csv.
+        """
+        origin = None
+        with open(filename, mode='w') as gt_file:
+            gt_writer = csv.writer(gt_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+            for i in range(len(self.timestamps)):
+                qi, ti = utils.pose_from_oxts_packet(self.oxts[i].packet, 1, rot_type='Quaternion')
+                if not isinstance(origin, np.ndarray):
+                    origin = np.array(ti)
+                ti -= origin
+                # print([self.timestamps[i].toNanoseconds(), ti[0], ti[1], ti[2], qi[0], qi[1], qi[2], qi[3]])
+                gt_writer.writerow([self.timestamps[i].toNanoseconds(), -ti[0], -ti[1], -ti[2], qi[0], qi[1], qi[2], qi[3],
+                                    self.oxts[i].packet.vf, self.oxts[i].packet.vl, self.oxts[i].packet.vu,
+                                    self.oxts[i].packet.wx, self.oxts[i].packet.wy, self.oxts[i].packet.wz,
+                                    self.oxts[i].packet.ax, self.oxts[i].packet.ay, self.oxts[i].packet.az])
+

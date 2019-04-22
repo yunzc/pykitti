@@ -42,7 +42,7 @@ class Datetime:
 		return hr2sec + min2sec + self.sec + nsec2sec
 
 	def toNanoseconds(self):
-		sec = toSeconds
+		sec = self.toSeconds()
 		return sec * 1e9
 
 	def __eq__(self, other):
