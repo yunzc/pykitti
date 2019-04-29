@@ -331,9 +331,10 @@ class raw:
         origin = None
         with open(filename, mode='w') as gt_file:
             gt_writer = csv.writer(gt_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-
+            scale = np.cos(self.oxts[0].packet.lat * np.pi / 180.0);
             for i in range(len(self.timestamps)):
-                qi, ti = utils.pose_from_oxts_packet(self.oxts[i].packet, 1, rot_type='Quaternion')
+                
+                qi, ti = utils.pose_from_oxts_packet(self.oxts[i].packet, scale, rot_type='Quaternion')
                 if not isinstance(origin, np.ndarray):
                     origin = np.array(ti)
                 ti -= origin
