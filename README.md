@@ -80,6 +80,19 @@ img_np = np.array(img)
 img_cv2 = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
 ```
 
+### Save and convert groundtruth
+```python
+import pykitti
+basedir = '/home/user/data' # path to folder data is contained in 
+date = '2011_09_26'
+drive = '0002'
+data = pykitti.raw(basedir, date, drive, dataset='extract')
+# for synced datasets, set dataset='sync'
+
+gt_file = '/home/user/data/data.csv' # where you want to save the ground truth csv
+data.export_gt_to_csv(gt_file)
+```
+
 Note: This package does not actually require that OpenCV be installed on your system, except to run `demo_raw_cv2.py`.
 
 ## References
